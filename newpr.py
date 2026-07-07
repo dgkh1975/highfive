@@ -4,13 +4,12 @@ from __future__ import absolute_import, print_function
 
 from base64 import standard_b64encode
 import cgi
-import cgitb
-from configparser import ConfigParser, RawConfigParser
+from configparser import RawConfigParser
 import contextlib
 import gzip
 try:
     import simplejson as json
-except:
+except ImportError:
     import json
 from io import StringIO
 from urllib import request, error
@@ -87,6 +86,7 @@ class GithubAPIProvider(APIProvider):
     BASE_URL = "https://api.github.com/repos/"
     contributors_url = BASE_URL + "%s/%s/contributors?per_page=400"
     post_comment_url = BASE_URL + "%s/%s/issues/%s/comments"
+    add_reaction_url = BASE_URL + "%s/%s/issues/comments/%s/reactions"
     collaborators_url = BASE_URL + "%s/%s/collaborators"
     issue_url = BASE_URL + "%s/%s/issues/%s"
     get_label_url = BASE_URL + "%s/%s/issues/%s/labels"
@@ -98,6 +98,11 @@ class GithubAPIProvider(APIProvider):
         self.token = token
         self._labels = None
         self._diff = None
+        self.diff_url = None
+        self.pull_url = None
+        if "issue" in payload and "pull_request" in payload["issue"]:
+            self.diff_url = payload["issue"]["pull_request"]["diff_url"]
+            self.pull_url = payload["issue"]["pull_request"]["url"]
         if "pull_request" in payload:
             self.diff_url = payload["pull_request"]["diff_url"]
             self.pull_url = payload["pull_request"]["url"]
@@ -109,7 +114,9 @@ class GithubAPIProvider(APIProvider):
         req.get_method = lambda: method
         if self.token:
             authorization = '%s:%s' % (self.user, self.token)
-            base64string = standard_b64encode(authorization.encode('utf-8')).decode('utf-8').replace('\n', '')
+            encoded = authorization.encode('utf-8')
+            decoded = standard_b64encode(encoded).decode('utf-8')
+            base64string = decoded.replace('\n', '')
             req.add_header("Authorization", "Basic %s" % base64string)
 
         if media_type:
@@ -164,6 +171,16 @@ class GithubAPIProvider(APIProvider):
                 return True
             url = links['next']
 
+    def add_reaction(self, comment_id, reaction):
+        url = self.add_reaction_url % (self.owner, self.repo, comment_id)
+        try:
+            self.api_req("POST", url, {"content": reaction})
+        except error.HTTPError as e:
+            if e.code == 201:
+                pass
+            else:
+                raise e
+
     def post_comment(self, body):
         url = self.post_comment_url % (self.owner, self.repo, self.issue)
         try:
@@ -207,13 +224,18 @@ class GithubAPIProvider(APIProvider):
                 pass
             else:
                 raise e
-        self._labels = map(lambda x: x["name"], json.loads(result['body']))
+        self._labels = list(map(
+            lambda x: x["name"],
+            json.loads(result['body'])
+        ))
         return self._labels
 
     def get_diff(self):
+        if not self.diff_url:
+            return ''
         if self._diff:
             return self._diff
-        self._diff = self.api_req("GET", self.diff_url)['body']
+        self._diff = self.api_req("GET", self.diff_url)['body'].decode('utf-8')
         return self._diff
 
     def set_assignee(self, assignee):
@@ -227,7 +249,7 @@ class GithubAPIProvider(APIProvider):
                 raise e
 
     def get_pull(self):
-        return self.api_req("GET", self.pull_url)["body"]
+        return json.loads(self.api_req("GET", self.pull_url)["body"])
 
     def get_page_content(self, url):
         try:
@@ -244,14 +266,17 @@ warning_summary = warning_header + '\n\n%s'
 
 
 def extract_globals_from_payload(payload):
-    if payload["action"] == "created" or payload["action"] == "labeled" or 'issue' in payload:
+    if "issue" in payload:
         owner = payload['repository']['owner']['login']
         repo = payload['repository']['name']
         issue = str(payload['issue']['number'])
     else:
         owner = payload['pull_request']['base']['repo']['owner']['login']
         repo = payload['pull_request']['base']['repo']['name']
-        issue = str(payload["number"])
+        if "number" in payload:
+            issue = str(payload["number"])
+        else:
+            issue = str(payload["pull_request"]["number"])
     return (owner, repo, issue)
 
 
@@ -269,8 +294,6 @@ def handle_payload(api, payload, handlers=None):
 if __name__ == "__main__":
     print("Content-Type: text/html;charset=utf-8")
     print()
-
-    cgitb.enable()
 
     config = RawConfigParser()
     config.read('./config')

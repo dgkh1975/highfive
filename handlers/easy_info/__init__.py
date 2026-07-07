@@ -8,7 +8,9 @@ MSG = ('Hi! If you have any questions regarding this issue, feel free to make'
        ' a comment here, or ask it in '
        '[Zulip](https://servo.zulipchat.com/).\n\n'
        'If you intend to work on this issue, then add `@%s: %s`'
-       ' to your comment, and I\'ll assign this to you. :smile:')
+       ' to your comment, and I\'ll assign this to you. :smile:\n\n'
+       'Please read our [policy on AI contributions](https://book.servo.org/contributing/getting-started.html#ai-contributions) '  # noqa: E501
+       'before getting started.')
 
 RESPONSE_FAIL = ('It looks like this has already been assigned to someone.'
                  ' I\'ll leave the decision to a core contributor.')
@@ -19,7 +21,7 @@ RESPONSE_OK = ('Hey @%s! Thanks for your interest in working on this issue.'
 
 class EasyInfoHandler(EventHandler):
     def on_issue_labeled(self, api, payload):
-        if payload['label']['name'].lower() == 'e-easy':
+        if payload['label']['name'].lower() == 'e-less-complex':
             api.post_comment(MSG % (api.user, ASSIGN_MSG))
 
     def on_new_comment(self, api, payload):
@@ -34,7 +36,7 @@ class EasyInfoHandler(EventHandler):
 
         if re.search(r'@%s[: ]*%s' % (api.user, ASSIGN_MSG), str(msg)):
             labels = payload['issue']['labels']
-            if any(l['name'] == 'C-assigned' for l in labels):
+            if any(label['name'] == 'C-assigned' for label in labels):
                 api.post_comment(RESPONSE_FAIL)
                 return
 

@@ -1,14 +1,16 @@
 {
   "expected": {
-    "assignee": "jdm"
+    "labels": [
+      "S-awaiting-review",
+      "S-needs-rebase"
+    ]
   }, 
   "initial": {}, 
   "payload": {
     "number": 7076, 
     "pull_request": {
-      "assignee": null, 
-      "requested_reviewers": [],
-      "body": "r? @jdm", 
+      "draft": false,
+      "mergeable": false,
       "base": {
         "repo": {
           "owner": {
@@ -16,11 +18,8 @@
           }, 
           "name": "servo"
         }
-      }, 
-      "user": {
-        "login": "frewsxcv"
       }
     }, 
-    "action": "opened"
+    "action": "ready_for_review"
   }
 }

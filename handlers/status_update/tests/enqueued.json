@@ -1,0 +1,30 @@
+{
+  "expected": {
+    "labels": [
+      "S-awaiting-merge"
+    ]
+  }, 
+  "initial": {
+    "labels": [
+      "S-needs-code-changes", 
+      "S-tests-failed", 
+      "S-awaiting-merge",
+      "S-needs-rebase"
+    ]
+  }, 
+  "payload": {
+    "number": 7062, 
+    "pull_request": {
+      "draft": false,
+      "base": {
+        "repo": {
+          "owner": {
+            "login": "servo"
+          }, 
+          "name": "servo"
+        }
+      }
+    }, 
+    "action": "enqueued"
+  }
+}

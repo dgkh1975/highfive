@@ -1,0 +1,27 @@
+{
+  "expected": {
+    "labels": ["S-needs-rebase"]
+  }, 
+  "initial": {
+    "labels": [
+      "S-awaiting-merge"
+    ]
+  }, 
+  "payload": {
+    "number": 7062,
+    "reason": "MERGE_CONFLICT",
+    "pull_request": {
+      "draft": false,
+      "mergeable": false,
+      "base": {
+        "repo": {
+          "owner": {
+            "login": "servo"
+          }, 
+          "name": "servo"
+        }
+      }
+    }, 
+    "action": "dequeued"
+  }
+}

@@ -1,0 +1,27 @@
+{
+  "expected": {
+    "labels": ["S-tests-failed"]
+  }, 
+  "initial": {
+    "labels": [
+      "S-awaiting-merge"
+    ]
+  }, 
+  "payload": {
+    "number": 7062,
+    "reason": "CI_FAILURE",
+    "pull_request": {
+      "draft": false,
+      "mergeable": true,
+      "base": {
+        "repo": {
+          "owner": {
+            "login": "servo"
+          }, 
+          "name": "servo"
+        }
+      }
+    }, 
+    "action": "dequeued"
+  }
+}

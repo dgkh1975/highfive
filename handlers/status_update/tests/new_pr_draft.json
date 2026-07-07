@@ -1,20 +1,19 @@
 {
   "expected": {
-    "assignee": "SimonSapin"
+    "labels": [
+    ]
   }, 
-  "initial": {
-    "assignee": "SimonSapin"
-  }, 
+  "initial": {}, 
   "payload": {
-    "number": 7087, 
+    "number": 7076, 
     "pull_request": {
-      "assignee": {}, 
+      "draft": true,
       "base": {
         "repo": {
           "owner": {
             "login": "servo"
           }, 
-          "name": "highfive"
+          "name": "servo"
         }
       }
     }, 

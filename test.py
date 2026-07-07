@@ -13,7 +13,7 @@ from newpr import APIProvider, handle_payload
 
 class TestAPIProvider(APIProvider):
     def __init__(self, payload, user, new_contributor, labels, assignee,
-                 diff="", pull_request=""):
+                 diff=None, pull_request=""):
         super(TestAPIProvider, self).__init__(payload, user)
         self.new_contributor = new_contributor
         self.comments_posted = []
@@ -22,6 +22,7 @@ class TestAPIProvider(APIProvider):
         self.diff = diff
         self.pull_request = pull_request
         self.repo = str(self.repo)      # workaround for testing
+        self.reactions = []
 
     def is_new_contributor(self, username):
         return self.new_contributor
@@ -32,6 +33,9 @@ class TestAPIProvider(APIProvider):
     def add_label(self, label):
         self.labels += [label]
 
+    def add_reaction(self, comment_id, reaction):
+        self.reactions += [reaction]
+
     def remove_label(self, label):
         self.labels.remove(label)
 
@@ -39,10 +43,12 @@ class TestAPIProvider(APIProvider):
         return self.labels
 
     def get_diff(self):
-        return self.diff
+        if not self.diff:
+            return ''
+        return self.diff.decode('utf-8')
 
     def get_pull(self):
-        return self.pull_request
+        return json.loads(self.pull_request)
 
     def set_assignee(self, assignee):
         self.assignee = assignee
@@ -57,8 +63,8 @@ def create_test(filename, initial, expected,
     initial_values = {
         'new_contributor': initial.get('new_contributor', False),
         'labels': initial.get('labels', []),
-        'diff': initial.get('diff', ''),
-        'pull_request': initial.get('pull_request', ''),
+        'diff': initial.get('diff', None),
+        'pull_request': json.dumps(initial.get('pull_request', {})),
         'assignee': initial.get('assignee', None),
     }
 
@@ -78,15 +84,20 @@ def run_tests(tests, warn=True, overwrite=False):
         eventhandler.reset_test_state()
 
         try:
+            # print(test["filename"])
             initial, expected, = test['initial'], test['expected']
             wrapper = test['wrapper']
             payload = wrapper.json['payload']
+            if initial['diff']:
+                diff = initial['diff'].encode('utf-8')
+            else:
+                diff = None
             api = TestAPIProvider(payload,
                                   'highfive',
                                   initial['new_contributor'],
                                   initial['labels'],
                                   initial['assignee'],
-                                  initial['diff'],
+                                  diff,
                                   initial['pull_request'])
             handle_payload(api, payload, [handler])
 
@@ -100,6 +111,9 @@ def run_tests(tests, warn=True, overwrite=False):
             if 'assignee' in expected:
                 assert api.assignee == expected['assignee'], \
                     "%s == %s" % (api.assignee, expected['assignee'])
+            if 'reactions' in expected:
+                assert len(api.reactions) == expected['reactions'], \
+                    "%s == %s" % (len(api.reactions), expected['reactions'])
 
             # If this is the last test in the file, then it's time for cleanup
             if test['clean']:
@@ -133,7 +147,7 @@ def run_tests(tests, warn=True, overwrite=False):
 
 
 def register_tests(path):
-    tests_location = os.path.join(path, 'tests')
+    tests_location = os.path.join(os.path.dirname(path), 'tests')
     if not os.path.isdir(tests_location):
         return
 
